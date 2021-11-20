@@ -44,21 +44,58 @@ int main()
     nanogui::init();
 
     /* scoped variables */ {
-        Screen *screen = new Screen(Vector2i(600, 800), VPN_CONNECTION_NAME, false);
+        Screen *screen = new Screen(Vector2i(600, 800), VPN_CONNECTION_NAME, true);
 
         bool enabled = true;
         FormHelper *gui = new FormHelper(screen);
         ref<Window> window = gui->addWindow(Eigen::Vector2i(0, 0), VPN_CONNECTION_NAME);
+        window->setLayout(new GroupLayout());
+
 
         /* themeing */
         screen->setBackground(Color(Eigen::Vector4i(0, 0, 0, 255)));
         window->theme()->mTextColor = Color(Eigen::Vector4i(106, 211, 25, 255));
         gui->setLabelFontSize(24);
 
-        auto cobo = new ComboBox(window, {"Item 1", "Item 2", "Item 3"});
-        cobo->setFontSize(16);
-        cobo->setFixedSize(Vector2i(100, 20));
-        gui->addWidget("Server: ", cobo);
+        auto serversCobo = new ComboBox(window, serversList);
+        serversCobo->setFontSize(16);
+        serversCobo->setFixedSize(Vector2i(100, 20));
+        gui->addWidget("Server: ", serversCobo);
+
+        std::string pingStr = "N/A";
+        auto ping = gui->addVariable("Ping: ", pingStr, false);
+        ping->setFixedSize(Vector2i(200, 30));
+
+        auto pingStrLamb = [&](int idx)
+        {
+            auto p = util::ping(serversList[idx].c_str());
+            std::string s = "N/A (Don't use!)";
+
+            if (p != -1)
+            {
+                s = std::to_string(p) + " ms";
+            }
+
+            ping->setValue(s);
+        };
+
+        pingStrLamb(0);
+        serversCobo->setCallback(pingStrLamb);
+
+        PopupButton *imagePanelBtn = new PopupButton(window, "Image Panel");
+        gui->addWidget("", imagePanelBtn);
+        imagePanelBtn->setIcon(ENTYPO_ICON_FOLDER);
+        auto popup = imagePanelBtn->popup();
+
+        nanogui::VScrollPanel* scroll_panel = new nanogui::VScrollPanel(popup);
+        scroll_panel->setFixedSize(nanogui::Vector2i(125, 200));
+        nanogui::Widget* checkboxes = new nanogui::Widget(scroll_panel);
+        checkboxes->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Vertical, nanogui::Alignment::Minimum, 0, 0));
+        for (int i = 0; i < 100; i++)
+        {
+            auto thing = new Button(checkboxes, "CheckBox " + std::to_string(i));
+        }
+
 
         std::string connStatusStr = "Not Connected";
 
@@ -104,6 +141,7 @@ int main()
 
         connectBtn->setCallback(buttonFn);
 
+        //TODO
         /*
         ref<Window> logsWindow = gui->addWindow(Eigen::Vector2i(0, 0), "LOGS");
         logs = new TextBox(logsWindow, logString);

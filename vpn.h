@@ -149,7 +149,7 @@ Port=VPN2-0
 Device=WAN Miniport (IKEv2)
 
 DEVICE=vpn
-PhoneNumber=vpn-mahii.opengw.net
+PhoneNumber=public-vpn-110.opengw.net
 AreaCode=
 CountryCode=0
 CountryID=0
@@ -163,13 +163,15 @@ TryNextAlternateOnFail=1
 
 class VPN
 {
+    std::string currentServer = "";
     HRASCONN connection = nullptr;
     PIP_ADAPTER_INFO _interface = nullptr;
 
 public:
     VPN()
     {
-        printf("[VPN] Init.\n");
+        printf("[VPN] Init, Getting servers list...\n");
+        util::getServersList();
     }
     ~VPN()
     {
@@ -333,11 +335,9 @@ public:
 
             if (dwRet == ERROR_SUCCESS)
             {
-
                 if (connection)
                 {
                     printf("[Connect] Connected!\n");
-
                     if (addRouting())
                     {
                         //Everything is in place, what a great pog day!!
