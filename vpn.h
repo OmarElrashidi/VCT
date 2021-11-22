@@ -149,7 +149,7 @@ Port=VPN2-0
 Device=WAN Miniport (IKEv2)
 
 DEVICE=vpn
-PhoneNumber=public-vpn-110.opengw.net
+PhoneNumber=N/A
 AreaCode=
 CountryCode=0
 CountryID=0
@@ -163,11 +163,11 @@ TryNextAlternateOnFail=1
 
 class VPN
 {
-    std::string currentServer = "";
     HRASCONN connection = nullptr;
     PIP_ADAPTER_INFO _interface = nullptr;
 
 public:
+    std::string currentServer = "N/A";
     VPN()
     {
         printf("[VPN] Init, Getting servers list...\n");
@@ -188,7 +188,7 @@ public:
         MessageBoxA(NULL, (LPSTR)szBuf, "Error", MB_OK | MB_ICONSTOP);
     }
 
-    static bool setupVPN(const std::string &phonebookDir)
+    bool setupVPN(const std::string &phonebookDir)
     {
         printf("[setupVPN] Setting up VPN.\n");
 
@@ -209,7 +209,7 @@ public:
         return (vpnStrategy == 6);
     }
 
-    static bool validateVPN()
+    bool validateVPN()
     {
         //i could use RasValidateEntryNameA but WDC
         auto rasphoneDir = std::string(getenv("USERPROFILE")) + "\\AppData\\Roaming\\Microsoft\\Network\\Connections\\PBK\\rasphone.pbk";
@@ -223,10 +223,48 @@ public:
         if (vpnStrategy == 6)
         {
             printf("[validateVPN] VPN is already setup.\n");
+            currentServer = phonebook[VPN_CONNECTION_NAME]["PhoneNumber"].as<std::string>();
             return true;
         }
 
         return setupVPN(rasphoneDir);
+    }
+
+    bool changeServer(std::string &server)
+    {
+
+        if (validateVPN())
+        {
+            printf("[changeServer] Changing server to %s\n", server.c_str());
+            auto rasphoneDir = std::string(getenv("USERPROFILE")) + "\\AppData\\Roaming\\Microsoft\\Network\\Connections\\PBK\\rasphone.pbk";
+            auto tmp_file_name = "temp.pbk";
+
+            {
+                std::ifstream original_file(rasphoneDir);
+                std::ofstream temp_file(tmp_file_name);
+                std::string line;
+                while (std::getline(original_file, line))
+                {
+                    util::findAndReplaceAll(line, currentServer, server);
+                    temp_file << line << "\n";
+                }
+                currentServer = server;
+            }
+
+            // overwrite the original file with the temporary file
+            {
+                std::ifstream temp_file(tmp_file_name);
+                std::ofstream original_file(rasphoneDir);
+                original_file << temp_file.rdbuf();
+            }
+
+            // and delete the temporary file
+            std::remove(tmp_file_name);
+
+            return true;
+        }
+
+        return false;
     }
 
     static PIP_ADAPTER_INFO getInterface()

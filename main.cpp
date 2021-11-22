@@ -3,6 +3,7 @@
     - Finish all connection flow
     - Add a dynamic server list
     - Backup the original file
+    
     - Add an experimental feature to only connect a certain game is running
     - Add an option to select prefered country
     - Add an option to reset everything
@@ -44,31 +45,38 @@ int main()
     nanogui::init();
 
     /* scoped variables */ {
-        Screen *screen = new Screen(Vector2i(600, 800), VPN_CONNECTION_NAME, true);
+        auto screen = new Screen(Vector2i(625, 420), VPN_CONNECTION_NAME, true);
 
-        bool enabled = true;
-        FormHelper *gui = new FormHelper(screen);
-        ref<Window> window = gui->addWindow(Eigen::Vector2i(0, 0), VPN_CONNECTION_NAME);
-        window->setLayout(new GroupLayout());
+        auto gui = new FormHelper(screen);
+        auto window = gui->addWindow(Eigen::Vector2i(0, 0), VPN_CONNECTION_NAME);
 
+        auto layout = new GroupLayout(50);
+        window->setLayout(layout);
 
         /* themeing */
         screen->setBackground(Color(Eigen::Vector4i(0, 0, 0, 255)));
-        window->theme()->mTextColor = Color(Eigen::Vector4i(106, 211, 25, 255));
+        window->theme()->mTextColor = Color(Eigen::Vector4i(86, 206, 202, 255));
         gui->setLabelFontSize(24);
 
-        auto serversCobo = new ComboBox(window, serversList);
-        serversCobo->setFontSize(16);
-        serversCobo->setFixedSize(Vector2i(100, 20));
-        gui->addWidget("Server: ", serversCobo);
+        auto lol = new Label(window, "Servers:", "sans", 24);
 
-        std::string pingStr = "N/A";
-        auto ping = gui->addVariable("Ping: ", pingStr, false);
-        ping->setFixedSize(Vector2i(200, 30));
+        auto serversPanel = new PopupButton(window, "Pick a server");
+        gui->addWidget("", serversPanel);
+        serversPanel->setIcon(ENTYPO_ICON_SIGNAL);
 
-        auto pingStrLamb = [&](int idx)
+        auto popup = serversPanel->popup();
+        popup->setFixedSize(Vector2i(170, 300));
+
+        auto scrollPanel = new VScrollPanel(popup);
+
+        auto buttons = new Widget(scrollPanel);
+        buttons->setLayout(new BoxLayout(Orientation::Vertical, Alignment::Middle, 30, 20));
+
+        detail::FormWidget<std::string>* ping;
+
+        auto pingStrLamb = [&](const std::string& str)
         {
-            auto p = util::ping(serversList[idx].c_str());
+            auto p = util::ping(str.c_str());
             std::string s = "N/A (Don't use!)";
 
             if (p != -1)
@@ -79,23 +87,20 @@ int main()
             ping->setValue(s);
         };
 
-        pingStrLamb(0);
-        serversCobo->setCallback(pingStrLamb);
-
-        PopupButton *imagePanelBtn = new PopupButton(window, "Image Panel");
-        gui->addWidget("", imagePanelBtn);
-        imagePanelBtn->setIcon(ENTYPO_ICON_FOLDER);
-        auto popup = imagePanelBtn->popup();
-
-        nanogui::VScrollPanel* scroll_panel = new nanogui::VScrollPanel(popup);
-        scroll_panel->setFixedSize(nanogui::Vector2i(125, 200));
-        nanogui::Widget* checkboxes = new nanogui::Widget(scroll_panel);
-        checkboxes->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Vertical, nanogui::Alignment::Minimum, 0, 0));
-        for (int i = 0; i < 100; i++)
+        for (auto &&p : serversList)
         {
-            auto thing = new Button(checkboxes, "CheckBox " + std::to_string(i));
+            auto btn = new Button(buttons, p.first);
+            btn->setCallback([&]()
+                             {
+                                 serversPanel->setCaption(p.first);
+                                 pingStrLamb(p.first);
+                                 vpn->changeServer(p.second);
+                             });
         }
 
+        std::string pingStr = "N/A";
+        ping = gui->addVariable("Ping: ", pingStr, false);
+        ping->setFixedSize(Vector2i(200, 30));
 
         std::string connStatusStr = "Not Connected";
 
@@ -105,7 +110,7 @@ int main()
         auto connectBtn = gui->addButton("Connect", [&]() {});
 
         connectBtn->setFixedSize(Vector2i(300, 100));
-        connectBtn->setIcon(ENTYPO_ICON_SIGNAL);
+        connectBtn->setIcon(ENTYPO_ICON_PAPER_PLANE);
 
         auto buttonFn = [&]()
         {
@@ -151,7 +156,6 @@ int main()
 
         screen->setVisible(true);
         screen->performLayout();
-        window->center();
 
         nanogui::mainloop();
     }

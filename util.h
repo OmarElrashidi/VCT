@@ -1,7 +1,7 @@
 #pragma once
 #include "framework.h"
 
-inline std::vector<std::string> serversList;
+inline std::vector<std::pair<std::string, std::string>> serversList;
 
 namespace util
 {
@@ -60,8 +60,8 @@ namespace util
 
         while (in.read_row(HostName, IP, Score, Ping, Speed, CountryLong, CountryShort))
         {
-            printf("IP: %s - Round network trip: %i\n", IP.c_str(), Ping);
-            serversList.push_back(IP);
+            //printf("IP: %s - Round network trip: %i\n", IP.c_str(), Ping);
+            serversList.push_back({ IP, (HostName + ".opengw.net") });
         }
     }
 
