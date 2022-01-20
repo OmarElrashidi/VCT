@@ -8,7 +8,8 @@
 */
 
 constexpr const char *VPN_CONNECTION_NAME = "VCT";
-const std::vector<std::string> VOIP_ROUTES = {"3.0.0.0", "18.0.0.0", "34.0.0.0", "35.0.0.0", "50.0.0.0", "52.0.0.0", "54.0.0.0"};
+const std::vector<std::string> VOIP_ROUTES = {
+    "3.0.0.0", "18.0.0.0", "34.0.0.0", "35.0.0.0", "40.0.0.0", "44.0.0.0", "45.0.0.0", "47.0.0.0", "50.0.0.0", "52.0.0.0", "54.0.0.0"};
 
 std::string CONNECTION_DATA =
     R"([PLACEHOLDER]
@@ -214,6 +215,20 @@ public:
         //i could use RasValidateEntryNameA but WDC
         auto rasphoneDir = std::string(getenv("USERPROFILE")) + "\\AppData\\Roaming\\Microsoft\\Network\\Connections\\PBK\\rasphone.pbk";
 
+        //TODO: look into this, it's weird on some windows versions.
+        std::ifstream ifile;
+        ifile.open(rasphoneDir);
+        if (!ifile)
+        {
+            rasphoneDir = std::string(getenv("SystemDrive")) + "\\ProgramData\\Microsoft\\Network\\Connections\\Pbk\\rasphone.pbk";
+            ifile.open(rasphoneDir);
+            if (!ifile)
+            {
+                printf("[validateVPN] Could not find rasphone.pbk.\n");
+                return false;
+            }
+        }
+
         ini::IniFile phonebook;
         phonebook.load(rasphoneDir);
 
@@ -232,13 +247,25 @@ public:
 
     bool changeServer(std::string &server)
     {
-
         if (validateVPN())
         {
             printf("[changeServer] Changing server to %s\n", server.c_str());
             auto rasphoneDir = std::string(getenv("USERPROFILE")) + "\\AppData\\Roaming\\Microsoft\\Network\\Connections\\PBK\\rasphone.pbk";
-            auto tmp_file_name = "temp.pbk";
 
+            std::ifstream ifile;
+            ifile.open(rasphoneDir);
+            if (!ifile)
+            {
+                rasphoneDir = std::string(getenv("SystemDrive")) + "\\ProgramData\\Microsoft\\Network\\Connections\\Pbk\\rasphone.pbk";
+                ifile.open(rasphoneDir);
+                if (!ifile)
+                {
+                    printf("[validateVPN] Could not find rasphone.pbk.\n");
+                    return false;
+                }
+            }
+
+            auto tmp_file_name = "temp.pbk";
             {
                 std::ifstream original_file(rasphoneDir);
                 std::ofstream temp_file(tmp_file_name);

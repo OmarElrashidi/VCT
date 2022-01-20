@@ -5,14 +5,19 @@
 #include <stdio.h>
 #include <string>
 #include <array>
+#include <fstream>
 
+#include "httplib.h"
 #include "inicpp.h"
+#include "csv.h"
 
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
 
 #include <iphlpapi.h>
+#include <icmpapi.h>
 #pragma comment(lib, "iphlpapi.lib")
+
 
 #include <Ras.h>
 #include <RasError.h>
