@@ -7,7 +7,6 @@
 #include <array>
 #include <fstream>
 
-#include "httplib.h"
 #include "inicpp.h"
 #include "csv.h"
 
@@ -22,3 +21,5 @@
 #include <Ras.h>
 #include <RasError.h>
 #pragma comment(lib, "Rasapi32.lib")
+
+#include <cpr/cpr.h>

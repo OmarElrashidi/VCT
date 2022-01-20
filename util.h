@@ -60,29 +60,45 @@ namespace util
 
         while (in.read_row(HostName, IP, Score, Ping, Speed, CountryLong, CountryShort))
         {
-            //printf("IP: %s - Round network trip: %i\n", IP.c_str(), Ping);
-            serversList.push_back({ IP, (HostName + ".opengw.net") });
+            // printf("IP: %s - Round network trip: %i\n", IP.c_str(), Ping);
+            serversList.push_back({IP, (HostName + ".opengw.net")});
         }
     }
 
     static void getServersList()
     {
-        httplib::Client cli("http://www.vpngate.net");
+        cpr::Response r = cpr::Get(cpr::Url{"https://www.vpngate.net/api/iphone/"});
 
-        if (auto res = cli.Get("/api/iphone/"))
+        if (r.status_code == 200)
         {
-            if (res->status == 200)
-            {
-                //the csv here is not valid, but it's the only way to get the data so we fix it 
-                res->body.erase(0, 15);                 // removes (*vpn_servers\n#)
-                res->body.resize(res->body.size() - 3); // removes (*)
+            // the csv here is not valid, but it's the only way to get the data so we fix it
+            r.text.erase(0, 15);              // removes (*vpn_servers\n#)
+            r.text.resize(r.text.size() - 3); // removes (*)
 
-                return parseServers(res->body);
-            }
+            return parseServers(r.text);
+        }
+        else
+        {
+            printf("Status: %i\n", r.status_code);
         }
 
-        MessageBoxA(nullptr, "An error occured while getting servers list.\nPlease make sure you have a stable internet connection and relaunch the app.", "Caution!", MB_OK | MB_ICONWARNING);
+        auto ret = MessageBoxA(nullptr, "An error occured while getting servers list.\nPlease make sure you have a stable internet connection and press retry or press cancel to exit.", "Caution!", MB_RETRYCANCEL | MB_ICONWARNING);
 
+        switch (ret)
+        {
+
+        case IDRETRY:
+        {
+            getServersList();
+            break;
+        }
+        case IDCANCEL:
+        {
+            exit(1);
+            break;
+        }
+        }
+        
         exit(1);
     }
 
